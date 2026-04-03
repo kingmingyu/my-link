@@ -1,10 +1,57 @@
-import { DUMMY_LINKS } from "@/data/links";
+"use client";
+
+import { DUMMY_LINKS, LinkItem } from "@/data/links";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import { RiExternalLinkLine, RiLinkM, RiVerifiedBadgeFill } from "@remixicon/react";
+import { RiExternalLinkLine, RiLinkM, RiVerifiedBadgeFill, RiAddLine } from "@remixicon/react";
+import { useState } from "react";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
+const formSchema = z.object({
+  title: z
+    .string()
+    .min(1, { message: "어떤 링크인지 알 수 있게 제목을 알려주세요! 🙌" })
+    .max(50, { message: "제목이 너무 길어요. 50자 이내로 엣지있게 적어주세요! ✨" }),
+  url: z
+    .string()
+    .min(1, { message: "공유하고 싶은 웹페이지 주소(URL)를 남겨주세요! 🔗" })
+    .url({ message: "앗, 올바른 주소 형식이 아니에요! 'https://' 로 시작하게 적어주시겠어요? 👀" }),
+});
 
 export default function Page() {
-  const visibleLinks = DUMMY_LINKS.filter(link => link.isActive).sort((a, b) => a.order - b.order);
+  const [links, setLinks] = useState<LinkItem[]>(DUMMY_LINKS);
+  const [open, setOpen] = useState(false);
+
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      title: "",
+      url: "",
+    },
+  });
+
+  const visibleLinks = links.filter((link) => link.isActive).sort((a, b) => a.order - b.order);
 
   // 고해상도 파비콘을 가져오기 위한 유틸리티 함수 (구글 S2 활용)
   const getHighResFavicon = (url: string) => {
@@ -16,12 +63,29 @@ export default function Page() {
     }
   };
 
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    const newLink: LinkItem = {
+      id: `link-${Date.now()}`,
+      title: values.title,
+      url: values.url,
+      faviconUrl: getHighResFavicon(values.url),
+      isActive: true,
+      order: links.length,
+      clickCount: 0,
+      createdAt: new Date().toISOString(),
+    };
+
+    setLinks([...links, newLink]);
+    form.reset();
+    setOpen(false);
+  };
+
   return (
     <div className="flex min-h-dvh flex-col items-center px-4 py-16 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 font-sans selection:bg-purple-200 dark:selection:bg-purple-900">
       <div className="w-full max-w-[480px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out fill-mode-both">
         
         {/* Profile Header */}
-        <header className="flex flex-col items-center text-center mb-10">
+        <header className="flex flex-col items-center text-center mb-8">
           <div className="relative mb-5">
             {/* Avatar with gradient ring */}
             <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-purple-500 to-pink-500 shadow-xl shadow-purple-500/20">
@@ -43,6 +107,60 @@ export default function Page() {
             안녕하세요! 제 포트폴리오와 소셜 미디어 링크들을 이곳에 모두 모았습니다 ✨
           </p>
         </header>
+
+        {/* Add Link Dialog & Button */}
+        <div className="flex justify-center mb-6">
+          <Dialog open={open} onOpenChange={(isOpen) => {
+            setOpen(isOpen);
+            if (!isOpen) form.reset();
+          }}>
+            <DialogTrigger render={<Button variant="outline" className="rounded-full shadow-sm bg-white dark:bg-slate-800" />}>
+              <RiAddLine className="w-4 h-4 mr-2" />
+              새로운 링크 추가
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>링크 추가</DialogTitle>
+                <DialogDescription>
+                  추가할 링크의 제목과 URL을 입력해주세요.
+                </DialogDescription>
+              </DialogHeader>
+              <Form {...form}>
+                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pt-2">
+                  <FormField
+                    control={form.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>제목</FormLabel>
+                        <FormControl>
+                          <Input placeholder="예: 내 유튜브 보러가기" maxLength={50} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="url"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>URL</FormLabel>
+                        <FormControl>
+                          <Input type="url" placeholder="https://example.com" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <DialogFooter className="pt-4">
+                    <Button type="submit">추가하기</Button>
+                  </DialogFooter>
+                </form>
+              </Form>
+            </DialogContent>
+          </Dialog>
+        </div>
         
         {/* Link List */}
         <main className="flex flex-col gap-4 w-full">
