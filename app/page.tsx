@@ -1,15 +1,15 @@
 "use client";
 
-import { DUMMY_LINKS, LinkItem } from "@/data/links";
+import { LinkItem } from "@/data/links";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import { RiExternalLinkLine, RiLinkM, RiVerifiedBadgeFill, RiAddLine } from "@remixicon/react";
-import { useState } from "react";
+import { RiExternalLinkLine, RiLinkM, RiVerifiedBadgeFill, RiAddLine, RiLoader4Line } from "@remixicon/react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { db } from "@/lib/firebase";
-import { doc, setDoc } from "firebase/firestore";
+import { doc, setDoc, collection, query, orderBy, onSnapshot } from "firebase/firestore";
 import {
   Dialog,
   DialogContent,
@@ -42,8 +42,26 @@ const formSchema = z.object({
 });
 
 export default function Page() {
-  const [links, setLinks] = useState<LinkItem[]>(DUMMY_LINKS);
+  const [links, setLinks] = useState<LinkItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const q = query(
+      collection(db, "users", "anonymous", "links"),
+      orderBy("order", "asc")
+    );
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      const linksData: LinkItem[] = [];
+      querySnapshot.forEach((doc) => {
+        linksData.push(doc.data() as LinkItem);
+      });
+      setLinks(linksData);
+      setIsLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -82,7 +100,6 @@ export default function Page() {
       const linkRef = doc(db, "users", "anonymous", "links", newId);
       await setDoc(linkRef, newLink);
       
-      setLinks([...links, newLink]);
       form.reset();
       setOpen(false);
     } catch (error) {
@@ -165,7 +182,10 @@ export default function Page() {
                     )}
                   />
                   <DialogFooter className="pt-4">
-                    <Button type="submit">추가하기</Button>
+                    <Button type="submit" disabled={form.formState.isSubmitting}>
+                      {form.formState.isSubmitting && <RiLoader4Line className="w-4 h-4 mr-2 animate-spin" />}
+                      추가하기
+                    </Button>
                   </DialogFooter>
                 </form>
               </Form>
@@ -175,47 +195,72 @@ export default function Page() {
         
         {/* Link List */}
         <main className="flex flex-col gap-4 w-full">
-          {visibleLinks.map((link, index) => {
-            const highResIcon = getHighResFavicon(link.url) || link.faviconUrl;
-            return (
-              <Link 
-                key={link.id} 
-                href={link.url} 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="group block w-full rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 transition-all animate-in fade-in slide-in-from-bottom-3 fill-mode-both"
-                style={{
-                  animationDelay: `${(index + 1) * 100}ms`
-                }}
+          {isLoading ? (
+            // Skeleton Loading State
+            Array.from({ length: 3 }).map((_, i) => (
+              <div
+                key={`skeleton-${i}`}
+                className="w-full rounded-2xl animate-pulse"
               >
-                <Card className="overflow-hidden border-0 shadow-sm bg-white/60 dark:bg-slate-800/60 backdrop-blur-md hover:bg-white dark:hover:bg-slate-800 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10 hover:-translate-y-1">
-                  <CardContent className="p-4 flex items-center justify-between relative">
-                    <div className="flex items-center gap-4 z-10">
-                      <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center overflow-hidden shrink-0 shadow-inner group-hover:scale-110 group-hover:bg-white dark:group-hover:bg-slate-700 transition-all duration-300">
-                        {highResIcon ? (
-                          /* eslint-disable-next-line @next/next/no-img-element */
-                          <img 
-                            src={highResIcon} 
-                            alt={`${link.title} icon`} 
-                            className="w-6 h-6 object-contain"
-                          />
-                        ) : (
-                          <RiLinkM className="w-6 h-6 text-slate-400 dark:text-slate-500" />
-                        )}
-                      </div>
-                      <span className="font-semibold text-[15.5px] text-slate-800 dark:text-slate-100 tracking-tight">
-                        {link.title}
-                      </span>
-                    </div>
-                    
-                    <div className="w-8 h-8 rounded-full bg-slate-50 dark:bg-slate-700/30 flex items-center justify-center opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 z-10 text-slate-400 dark:text-slate-500 group-hover:text-purple-500 dark:group-hover:text-purple-400">
-                      <RiExternalLinkLine className="w-4 h-4" />
-                    </div>
+                <Card className="border-0 shadow-sm bg-white/40 dark:bg-slate-800/40 backdrop-blur-md">
+                  <CardContent className="p-4 flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-slate-200/80 dark:bg-slate-700/50 shrink-0" />
+                    <div className="h-5 bg-slate-200/80 dark:bg-slate-700/50 rounded-md w-3/5" />
                   </CardContent>
                 </Card>
-              </Link>
-            );
-          })}
+              </div>
+            ))
+          ) : visibleLinks.length === 0 ? (
+            // Empty State
+            <div className="text-center py-12 px-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white/30 dark:bg-slate-900/30">
+              <RiLinkM className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+              <p className="text-slate-500 dark:text-slate-400 font-medium text-[15px]">
+                아직 추가된 링크가 없어요.<br/>첫 번째 링크를 추가해보세요!
+              </p>
+            </div>
+          ) : (
+            visibleLinks.map((link, index) => {
+              const highResIcon = getHighResFavicon(link.url) || link.faviconUrl;
+              return (
+                <Link 
+                  key={link.id} 
+                  href={link.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="group block w-full rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 transition-all animate-in fade-in slide-in-from-bottom-3 fill-mode-both"
+                  style={{
+                    animationDelay: `${(index + 1) * 100}ms`
+                  }}
+                >
+                  <Card className="overflow-hidden border-0 shadow-sm bg-white/60 dark:bg-slate-800/60 backdrop-blur-md hover:bg-white dark:hover:bg-slate-800 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10 hover:-translate-y-1">
+                    <CardContent className="p-4 flex items-center justify-between relative">
+                      <div className="flex items-center gap-4 z-10 w-[calc(100%-2rem)]">
+                        <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center overflow-hidden shrink-0 shadow-inner group-hover:scale-110 group-hover:bg-white dark:group-hover:bg-slate-700 transition-all duration-300">
+                          {highResIcon ? (
+                            /* eslint-disable-next-line @next/next/no-img-element */
+                            <img 
+                              src={highResIcon} 
+                              alt={`${link.title} icon`} 
+                              className="w-6 h-6 object-contain"
+                            />
+                          ) : (
+                            <RiLinkM className="w-6 h-6 text-slate-400 dark:text-slate-500" />
+                          )}
+                        </div>
+                        <span className="font-semibold text-[15.5px] text-slate-800 dark:text-slate-100 tracking-tight truncate">
+                          {link.title}
+                        </span>
+                      </div>
+                      
+                      <div className="w-8 h-8 shrink-0 rounded-full bg-slate-50 dark:bg-slate-700/30 flex items-center justify-center opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 z-10 text-slate-400 dark:text-slate-500 group-hover:text-purple-500 dark:group-hover:text-purple-400">
+                        <RiExternalLinkLine className="w-4 h-4" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })
+          )}
         </main>
         
         {/* Footer */}
