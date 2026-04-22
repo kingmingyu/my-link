@@ -8,6 +8,8 @@ import { useState } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
+import { db } from "@/lib/firebase";
+import { doc, setDoc } from "firebase/firestore";
 import {
   Dialog,
   DialogContent,
@@ -63,9 +65,10 @@ export default function Page() {
     }
   };
 
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    const newId = `link-${Date.now()}`;
     const newLink: LinkItem = {
-      id: `link-${Date.now()}`,
+      id: newId,
       title: values.title,
       url: values.url,
       faviconUrl: getHighResFavicon(values.url),
@@ -75,9 +78,17 @@ export default function Page() {
       createdAt: new Date().toISOString(),
     };
 
-    setLinks([...links, newLink]);
-    form.reset();
-    setOpen(false);
+    try {
+      const linkRef = doc(db, "users", "anonymous", "links", newId);
+      await setDoc(linkRef, newLink);
+      
+      setLinks([...links, newLink]);
+      form.reset();
+      setOpen(false);
+    } catch (error) {
+      console.error("Error adding document: ", error);
+      alert("링크 추가 중 오류가 발생했습니다.");
+    }
   };
 
   return (
