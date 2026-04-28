@@ -473,52 +473,54 @@ export default function Page() {
                     />
                   ) : (
                     // ── 일반 링크 카드 ─────────────────────────────────────
-                    <Card className="overflow-hidden border-0 shadow-sm bg-white/60 dark:bg-slate-800/60 backdrop-blur-md hover:bg-white dark:hover:bg-slate-800 transition-all duration-300 hover:shadow-xl hover:shadow-purple-500/10">
-                      <CardContent className="p-4 flex items-center justify-between gap-3">
-                        {/* 링크 내용 (클릭 영역) */}
-                        <Link
-                          href={link.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="group flex items-center gap-4 flex-1 min-w-0 outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50 rounded-xl"
-                        >
-                          <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center overflow-hidden shrink-0 shadow-inner group-hover:scale-110 group-hover:bg-white dark:group-hover:bg-slate-700 transition-all duration-300">
-                            {highResIcon ? (
-                              /* eslint-disable-next-line @next/next/no-img-element */
-                              <img
-                                src={highResIcon}
-                                alt={`${link.title} icon`}
-                                className="w-6 h-6 object-contain"
-                              />
-                            ) : (
-                              <RiLinkM className="w-6 h-6 text-slate-400 dark:text-slate-500" />
-                            )}
+                    <Link
+                      href={link.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="group block w-full rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50"
+                    >
+                      <Card className="overflow-hidden border-0 shadow-sm bg-white/60 dark:bg-slate-800/60 backdrop-blur-md group-hover:bg-white dark:group-hover:bg-slate-800 transition-all duration-300 group-hover:shadow-xl group-hover:shadow-purple-500/10 group-hover:-translate-y-0.5">
+                        <CardContent className="p-4 flex items-center justify-between gap-3">
+                          {/* 아이콘 + 제목 */}
+                          <div className="flex items-center gap-4 flex-1 min-w-0">
+                            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center overflow-hidden shrink-0 shadow-inner group-hover:scale-110 group-hover:bg-white dark:group-hover:bg-slate-700 transition-all duration-300">
+                              {highResIcon ? (
+                                /* eslint-disable-next-line @next/next/no-img-element */
+                                <img
+                                  src={highResIcon}
+                                  alt={`${link.title} icon`}
+                                  className="w-6 h-6 object-contain"
+                                />
+                              ) : (
+                                <RiLinkM className="w-6 h-6 text-slate-400 dark:text-slate-500" />
+                              )}
+                            </div>
+                            <span className="font-semibold text-[15px] text-slate-800 dark:text-slate-100 tracking-tight truncate">
+                              {link.title}
+                            </span>
+                            <RiExternalLinkLine className="w-4 h-4 shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-purple-400 dark:group-hover:text-purple-400 transition-colors duration-200 ml-auto" />
                           </div>
-                          <span className="font-semibold text-[15px] text-slate-800 dark:text-slate-100 tracking-tight truncate">
-                            {link.title}
-                          </span>
-                          <RiExternalLinkLine className="w-4 h-4 shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-purple-400 dark:group-hover:text-purple-400 transition-colors duration-200 ml-auto" />
-                        </Link>
 
-                        {/* 수정/삭제 버튼 (항상 표시) */}
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <button
-                            onClick={() => setEditingLinkId(link.id)}
-                            title="수정"
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200"
-                          >
-                            <RiPencilLine className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => openDeleteModal(link)}
-                            title="삭제"
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
-                          >
-                            <RiDeleteBinLine className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </CardContent>
-                    </Card>
+                          {/* 수정/삭제 버튼 - 클릭 시 링크 이동 차단 */}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <button
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); setEditingLinkId(link.id); }}
+                              title="수정"
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200"
+                            >
+                              <RiPencilLine className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); openDeleteModal(link); }}
+                              title="삭제"
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
+                            >
+                              <RiDeleteBinLine className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
                   )}
                 </div>
               );
