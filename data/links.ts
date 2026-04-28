@@ -7,6 +7,7 @@ export type LinkItem = {
   order: number;       // 정렬 인덱스
   clickCount: number;  // 누적 클릭수
   createdAt: string;   // 임시 문자열 타입 (실제로는 Firestore Timestamp)
+  updatedAt: string;   // 수정일
 };
 
 export const DUMMY_LINKS: LinkItem[] = [
@@ -19,6 +20,7 @@ export const DUMMY_LINKS: LinkItem[] = [
     order: 0,
     clickCount: 154,
     createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: "link-2",
@@ -29,6 +31,7 @@ export const DUMMY_LINKS: LinkItem[] = [
     order: 1,
     clickCount: 890,
     createdAt: new Date(Date.now() - 86400000).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000).toISOString(),
   },
   {
     id: "link-3",
@@ -39,6 +42,7 @@ export const DUMMY_LINKS: LinkItem[] = [
     order: 2,
     clickCount: 45,
     createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000 * 2).toISOString(),
   },
   {
     id: "link-4",
@@ -49,6 +53,7 @@ export const DUMMY_LINKS: LinkItem[] = [
     order: 3,
     clickCount: 12,
     createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000 * 3).toISOString(),
   },
   {
     id: "link-5",
@@ -59,5 +64,6 @@ export const DUMMY_LINKS: LinkItem[] = [
     order: 4,
     clickCount: 300,
     createdAt: new Date(Date.now() - 86400000 * 4).toISOString(),
+    updatedAt: new Date(Date.now() - 86400000 * 4).toISOString(),
   },
 ];

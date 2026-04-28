@@ -279,6 +279,7 @@ export default function Page() {
     }
   };
 
+
   // ── 링크 추가 ──────────────────────────────────────────────────────────────
   const onSubmit = async (values: FormValues) => {
     const newId = `link-${Date.now()}`;
@@ -291,6 +292,7 @@ export default function Page() {
       order: links.length,
       clickCount: 0,
       createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     };
 
     try {
@@ -313,6 +315,7 @@ export default function Page() {
         title: values.title,
         url: values.url,
         faviconUrl: getHighResFavicon(values.url),
+        updatedAt: new Date().toISOString(),
       });
       setEditingLinkId(null);
     } catch (error) {
