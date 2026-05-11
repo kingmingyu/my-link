@@ -12,8 +12,12 @@ import {
   RiDeleteBinLine,
   RiCloseLine,
   RiCheckLine,
+  RiArrowDownSLine,
+  RiLogoutBoxRLine,
+  RiShareLine,
+  RiEyeLine,
 } from "@remixicon/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -213,6 +217,7 @@ export default function Page() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authActionLoading, setAuthActionLoading] = useState(false);
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   const [links, setLinks] = useState<LinkItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -222,6 +227,8 @@ export default function Page() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
+  const profileMenuRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -229,6 +236,20 @@ export default function Page() {
     });
 
     return () => unsubscribeAuth();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!profileMenuRef.current) {
+        return;
+      }
+      if (!profileMenuRef.current.contains(event.target as Node)) {
+        setProfileMenuOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   useEffect(() => {
@@ -296,6 +317,50 @@ export default function Page() {
 
   const visibleLinks = links.filter((link) => link.isActive).sort((a, b) => a.order - b.order);
 
+  const displayName = userProfile?.displayName || user?.displayName || "MyLink User";
+  const email = userProfile?.email || user?.email || "";
+
+  const publicProfilePath = useMemo(() => {
+    if (!user) {
+      return "";
+    }
+    return `/${user.uid}`;
+  }, [user]);
+
+  const getPublicProfileUrl = () => {
+    if (!user) {
+      return "";
+    }
+    if (typeof window === "undefined") {
+      return publicProfilePath;
+    }
+    return `${window.location.origin}${publicProfilePath}`;
+  };
+
+  const copyShareLink = async () => {
+    try {
+      const url = getPublicProfileUrl();
+      if (!url) {
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      alert("내 페이지 링크를 복사했습니다.");
+      setProfileMenuOpen(false);
+    } catch (error) {
+      console.error("Error copying profile URL:", error);
+      alert("링크 복사에 실패했습니다.");
+    }
+  };
+
+  const openPreview = () => {
+    const url = getPublicProfileUrl();
+    if (!url) {
+      return;
+    }
+    window.open(url, "_blank", "noopener,noreferrer");
+    setProfileMenuOpen(false);
+  };
+
   const getHighResFavicon = (url: string) => {
     try {
       const hostname = new URL(url).hostname;
@@ -326,6 +391,7 @@ export default function Page() {
       setEditingLinkId(null);
       setIsDeleteModalOpen(false);
       setDeleteTarget(null);
+      setProfileMenuOpen(false);
     } catch (error) {
       console.error("Error signing out: ", error);
       alert("로그아웃 중 오류가 발생했습니다.");
@@ -413,12 +479,60 @@ export default function Page() {
     <div className="flex min-h-dvh flex-col items-center px-4 py-16 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 font-sans selection:bg-purple-200 dark:selection:bg-purple-900">
       <div className="w-full max-w-[480px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out fill-mode-both">
         <header className="flex flex-col items-center text-center mb-8">
-          <div className="w-full flex items-center justify-end mb-4">
+          <div className="w-full flex items-center justify-end mb-4 relative" ref={profileMenuRef}>
             {user ? (
-              <Button type="button" variant="outline" className="bg-white dark:bg-slate-800" onClick={handleSignOut} disabled={authActionLoading}>
-                {authActionLoading && <RiLoader4Line className="w-4 h-4 mr-2 animate-spin" />}
-                로그아웃
-              </Button>
+              <>
+                <button
+                  type="button"
+                  className="flex items-center gap-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 shadow-sm"
+                  onClick={() => setProfileMenuOpen((prev) => !prev)}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={userProfile?.photoURL || user?.photoURL || "https://api.dicebear.com/9.x/notionists/svg?seed=Felix&backgroundColor=f8fafc"}
+                    alt="profile"
+                    className="w-7 h-7 rounded-full object-cover"
+                  />
+                  <RiArrowDownSLine className="w-4 h-4 text-slate-500" />
+                </button>
+
+                {profileMenuOpen && (
+                  <div className="absolute right-0 top-12 z-30 w-72 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-2">
+                    <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
+                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{displayName}</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{email}</p>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="w-full mt-1 px-3 py-2 text-left text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                      onClick={openPreview}
+                    >
+                      <RiEyeLine className="w-4 h-4" />
+                      내 페이지 미리보기
+                    </button>
+
+                    <button
+                      type="button"
+                      className="w-full px-3 py-2 text-left text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                      onClick={copyShareLink}
+                    >
+                      <RiShareLine className="w-4 h-4" />
+                      내 링크 복사
+                    </button>
+
+                    <button
+                      type="button"
+                      className="w-full px-3 py-2 text-left text-sm rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                      onClick={handleSignOut}
+                      disabled={authActionLoading}
+                    >
+                      {authActionLoading ? <RiLoader4Line className="w-4 h-4 animate-spin" /> : <RiLogoutBoxRLine className="w-4 h-4" />}
+                      로그아웃
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <Button
                 type="button"
@@ -446,14 +560,14 @@ export default function Page() {
           </div>
 
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5 justify-center">
-            {userProfile?.displayName || userProfile?.email || user?.displayName || user?.email || "MyLink Guest"}
+            {displayName}
             <RiVerifiedBadgeFill className="w-5 h-5 text-blue-500" />
           </h1>
 
           <p className="text-slate-600 dark:text-slate-400 mt-2 text-[15px] leading-relaxed max-w-[320px] break-all">
             {user
               ? `users/${user.uid}/links 경로의 개인 링크를 불러와 표시합니다.`
-              : "로그인하면 개인 링크를 저장/편집/삭제할 수 있습니다."}
+              : "하나의 링크로 당신의 모든 채널을 소개해보세요."}
           </p>
 
           {user && (
@@ -530,11 +644,24 @@ export default function Page() {
 
         <main className="flex flex-col gap-4 w-full">
           {!user ? (
-            <div className="text-center py-12 px-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white/30 dark:bg-slate-900/30">
-              <RiLinkM className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
-              <p className="text-slate-500 dark:text-slate-400 font-medium text-[15px]">Google 로그인 후 개인 링크 페이지를 사용할 수 있습니다.</p>
-              <p className="text-slate-400 dark:text-slate-500 text-sm mt-2">로그인 데이터 경로: users/{"{"}user.uid{"}"}/links</p>
-            </div>
+            <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 p-6 text-left shadow-sm">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">내 링크를 한 페이지에</h2>
+              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Google 로그인 후, 프로필과 링크를 개인 경로에 저장하고 바로 공유할 수 있습니다.</p>
+              <div className="mt-5 grid gap-3 text-sm">
+                <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3">- 링크 추가/수정/삭제를 실시간으로 관리</div>
+                <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3">- 내 페이지 미리보기와 공유 링크 복사 지원</div>
+                <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3">- Firestore 경로: users/{"{"}uid{"}"}/links</div>
+              </div>
+              <Button
+                type="button"
+                className="mt-6 w-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+                onClick={signInWithGoogle}
+                disabled={authActionLoading || authLoading}
+              >
+                {(authActionLoading || authLoading) && <RiLoader4Line className="w-4 h-4 mr-2 animate-spin" />}
+                Google로 시작하기
+              </Button>
+            </section>
           ) : authLoading || isLoading ? (
             Array.from({ length: 3 }).map((_, i) => (
               <div key={`skeleton-${i}`} className="w-full rounded-2xl animate-pulse">
