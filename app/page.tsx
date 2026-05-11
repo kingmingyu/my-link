@@ -59,6 +59,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 type LinkItem = {
   id: string;
@@ -344,11 +345,11 @@ export default function Page() {
         return;
       }
       await navigator.clipboard.writeText(url);
-      alert("내 페이지 링크를 복사했습니다.");
+      toast.success("내 링크를 복사했어요.");
       setProfileMenuOpen(false);
     } catch (error) {
       console.error("Error copying profile URL:", error);
-      alert("링크 복사에 실패했습니다.");
+      toast.error("링크 복사에 실패했습니다.");
     }
   };
 
@@ -377,7 +378,7 @@ export default function Page() {
       await signInWithPopup(auth, provider);
     } catch (error) {
       console.error("Error signing in: ", error);
-      alert("Google 로그인 중 오류가 발생했습니다.");
+      toast.error("Google 로그인 중 오류가 발생했습니다.");
     } finally {
       setAuthActionLoading(false);
     }
@@ -394,7 +395,7 @@ export default function Page() {
       setProfileMenuOpen(false);
     } catch (error) {
       console.error("Error signing out: ", error);
-      alert("로그아웃 중 오류가 발생했습니다.");
+      toast.error("로그아웃 중 오류가 발생했습니다.");
     } finally {
       setAuthActionLoading(false);
     }
@@ -402,7 +403,7 @@ export default function Page() {
 
   const onSubmit = async (values: FormValues) => {
     if (!user) {
-      alert("로그인 후 링크를 추가할 수 있습니다.");
+      toast.error("로그인 후 링크를 추가할 수 있습니다.");
       return;
     }
 
@@ -426,13 +427,13 @@ export default function Page() {
       setOpen(false);
     } catch (error) {
       console.error("Error adding document: ", error);
-      alert("링크 추가 중 오류가 발생했습니다.");
+      toast.error("링크 추가 중 오류가 발생했습니다.");
     }
   };
 
   const onEditSave = async (link: LinkItem, values: FormValues) => {
     if (!user) {
-      alert("로그인 후 링크를 수정할 수 있습니다.");
+      toast.error("로그인 후 링크를 수정할 수 있습니다.");
       return;
     }
 
@@ -447,7 +448,7 @@ export default function Page() {
       setEditingLinkId(null);
     } catch (error) {
       console.error("Error updating document: ", error);
-      alert("링크 수정 중 오류가 발생했습니다.");
+      toast.error("링크 수정 중 오류가 발생했습니다.");
     }
   };
 
@@ -464,7 +465,7 @@ export default function Page() {
       setDeleteTarget(null);
     } catch (error) {
       console.error("Error deleting document: ", error);
-      alert("링크 삭제 중 오류가 발생했습니다.");
+      toast.error("링크 삭제 중 오류가 발생했습니다.");
     } finally {
       setIsDeleting(false);
     }
@@ -477,105 +478,85 @@ export default function Page() {
 
   return (
     <div className="flex min-h-dvh flex-col items-center px-4 py-16 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 font-sans selection:bg-purple-200 dark:selection:bg-purple-900">
+      {user && (
+        <div className="fixed top-4 right-4 md:top-5 md:right-6 z-50" ref={profileMenuRef}>
+          <button
+            type="button"
+            className="flex items-center gap-2 rounded-full bg-white/95 dark:bg-slate-900/95 border border-slate-200 dark:border-slate-700 px-2 py-1.5 shadow-lg"
+            onClick={() => setProfileMenuOpen((prev) => !prev)}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={userProfile?.photoURL || user?.photoURL || "https://api.dicebear.com/9.x/notionists/svg?seed=Felix&backgroundColor=f8fafc"}
+              alt="profile"
+              className="w-8 h-8 rounded-full object-cover"
+            />
+            <RiArrowDownSLine className="w-4 h-4 text-slate-500" />
+          </button>
+
+          {profileMenuOpen && (
+            <div className="absolute right-0 mt-2 w-80 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-2xl p-2">
+              <div className="px-3 py-3 rounded-xl bg-slate-50 dark:bg-slate-800 mb-1">
+                <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{displayName}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{email}</p>
+              </div>
+
+              <button
+                type="button"
+                className="w-full px-3 py-2.5 text-left text-sm rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                onClick={openPreview}
+              >
+                <RiEyeLine className="w-4 h-4" />
+                내 페이지 미리보기
+              </button>
+
+              <button
+                type="button"
+                className="w-full px-3 py-2.5 text-left text-sm rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                onClick={copyShareLink}
+              >
+                <RiShareLine className="w-4 h-4" />
+                내 링크 복사
+              </button>
+
+              <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
+
+              <button
+                type="button"
+                className="w-full px-3 py-2.5 text-left text-sm rounded-xl text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
+                onClick={handleSignOut}
+                disabled={authActionLoading}
+              >
+                {authActionLoading ? <RiLoader4Line className="w-4 h-4 animate-spin" /> : <RiLogoutBoxRLine className="w-4 h-4" />}
+                로그아웃
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="w-full max-w-[480px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out fill-mode-both">
-        <header className="flex flex-col items-center text-center mb-8">
-          <div className="w-full flex items-center justify-end mb-4 relative" ref={profileMenuRef}>
-            {user ? (
-              <>
-                <button
-                  type="button"
-                  className="flex items-center gap-2 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-2.5 py-1.5 shadow-sm"
-                  onClick={() => setProfileMenuOpen((prev) => !prev)}
-                >
+        {user && (
+          <header className="flex flex-col items-center text-center mb-8">
+            <div className="relative mb-5">
+              <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-purple-500 to-pink-500 shadow-xl shadow-purple-500/20">
+                <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 overflow-hidden flex items-center justify-center border-2 border-transparent">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={userProfile?.photoURL || user?.photoURL || "https://api.dicebear.com/9.x/notionists/svg?seed=Felix&backgroundColor=f8fafc"}
-                    alt="profile"
-                    className="w-7 h-7 rounded-full object-cover"
+                    alt="Profile Avatar"
+                    className="w-full h-full object-cover"
                   />
-                  <RiArrowDownSLine className="w-4 h-4 text-slate-500" />
-                </button>
-
-                {profileMenuOpen && (
-                  <div className="absolute right-0 top-12 z-30 w-72 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xl p-2">
-                    <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
-                      <p className="text-sm font-semibold text-slate-900 dark:text-slate-100 truncate">{displayName}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 truncate">{email}</p>
-                    </div>
-
-                    <button
-                      type="button"
-                      className="w-full mt-1 px-3 py-2 text-left text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
-                      onClick={openPreview}
-                    >
-                      <RiEyeLine className="w-4 h-4" />
-                      내 페이지 미리보기
-                    </button>
-
-                    <button
-                      type="button"
-                      className="w-full px-3 py-2 text-left text-sm rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
-                      onClick={copyShareLink}
-                    >
-                      <RiShareLine className="w-4 h-4" />
-                      내 링크 복사
-                    </button>
-
-                    <button
-                      type="button"
-                      className="w-full px-3 py-2 text-left text-sm rounded-lg text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                      onClick={handleSignOut}
-                      disabled={authActionLoading}
-                    >
-                      {authActionLoading ? <RiLoader4Line className="w-4 h-4 animate-spin" /> : <RiLogoutBoxRLine className="w-4 h-4" />}
-                      로그아웃
-                    </button>
-                  </div>
-                )}
-              </>
-            ) : (
-              <Button
-                type="button"
-                className="bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-                onClick={signInWithGoogle}
-                disabled={authActionLoading || authLoading}
-              >
-                {(authActionLoading || authLoading) && <RiLoader4Line className="w-4 h-4 mr-2 animate-spin" />}
-                Google로 로그인
-              </Button>
-            )}
-          </div>
-
-          <div className="relative mb-5">
-            <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-purple-500 to-pink-500 shadow-xl shadow-purple-500/20">
-              <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 overflow-hidden flex items-center justify-center border-2 border-transparent">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={userProfile?.photoURL || user?.photoURL || "https://api.dicebear.com/9.x/notionists/svg?seed=Felix&backgroundColor=f8fafc"}
-                  alt="Profile Avatar"
-                  className="w-full h-full object-cover"
-                />
+                </div>
               </div>
             </div>
-          </div>
 
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5 justify-center">
-            {displayName}
-            <RiVerifiedBadgeFill className="w-5 h-5 text-blue-500" />
-          </h1>
-
-          <p className="text-slate-600 dark:text-slate-400 mt-2 text-[15px] leading-relaxed max-w-[320px] break-all">
-            {user
-              ? `users/${user.uid}/links 경로의 개인 링크를 불러와 표시합니다.`
-              : "하나의 링크로 당신의 모든 채널을 소개해보세요."}
-          </p>
-
-          {user && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-2">
-              사용자 문서: users/{user.uid} | 현재 링크 수: {visibleLinks.length}개
+            <p className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5 justify-center">
+              {displayName}
+              <RiVerifiedBadgeFill className="w-5 h-5 text-blue-500" />
             </p>
-          )}
-        </header>
+          </header>
+        )}
 
         {user && (
           <div className="flex justify-center mb-6">
@@ -644,23 +625,61 @@ export default function Page() {
 
         <main className="flex flex-col gap-4 w-full">
           {!user ? (
-            <section className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white/70 dark:bg-slate-900/50 p-6 text-left shadow-sm">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">내 링크를 한 페이지에</h2>
-              <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">Google 로그인 후, 프로필과 링크를 개인 경로에 저장하고 바로 공유할 수 있습니다.</p>
-              <div className="mt-5 grid gap-3 text-sm">
-                <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3">- 링크 추가/수정/삭제를 실시간으로 관리</div>
-                <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3">- 내 페이지 미리보기와 공유 링크 복사 지원</div>
-                <div className="rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3">- Firestore 경로: users/{"{"}uid{"}"}/links</div>
+            <section className="w-screen relative left-1/2 right-1/2 -mx-[50vw] bg-slate-100 dark:bg-slate-950 border-y border-slate-200 dark:border-slate-800">
+              <div className="mx-auto max-w-6xl">
+                <div className="h-14 px-6 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
+                  <span className="text-xl font-extrabold tracking-tight text-blue-600 dark:text-blue-400">MyLink</span>
+                  <button
+                    type="button"
+                    onClick={signInWithGoogle}
+                    disabled={authActionLoading || authLoading}
+                    className="h-9 px-4 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold disabled:opacity-60"
+                  >
+                    로그인
+                  </button>
+                </div>
+
+                <div className="px-6 py-20 md:py-24 text-center">
+                  <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 leading-[0.95]">
+                    Development in <span className="text-blue-600 dark:text-blue-400">One Link</span>.
+                  </h2>
+                  <p className="mt-8 text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
+                    여러 플랫폼의 링크를 한곳에 모으고,
+                    <br />
+                    하나의 페이지로 깔끔하게 정리해 공유해보세요.
+                  </p>
+
+                  <div className="mt-10 flex justify-center">
+                    <Button
+                      type="button"
+                      className="h-12 px-8 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-base font-semibold min-w-80"
+                      onClick={signInWithGoogle}
+                      disabled={authActionLoading || authLoading}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src="https://www.google.com/s2/favicons?domain=google.com&sz=128" alt="google" className="w-5 h-5 mr-2 rounded-full" />
+                      {(authActionLoading || authLoading) && <RiLoader4Line className="w-4 h-4 mr-2 animate-spin" />}
+                      Google로 시작하기
+                    </Button>
+                  </div>
+
+                  <div className="mt-16 max-w-md mx-auto rounded-3xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-5 shadow-sm">
+                    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                      <div className="h-10 px-3 flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                        <div className="ml-2 h-6 flex-1 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700" />
+                      </div>
+                      <div className="p-4 bg-white dark:bg-slate-900 space-y-3">
+                        <div className="h-11 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/50" />
+                        <div className="h-11 rounded-xl bg-slate-100 dark:bg-slate-800" />
+                        <div className="h-11 rounded-xl bg-slate-100 dark:bg-slate-800" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <Button
-                type="button"
-                className="mt-6 w-full bg-slate-900 hover:bg-slate-800 text-white dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
-                onClick={signInWithGoogle}
-                disabled={authActionLoading || authLoading}
-              >
-                {(authActionLoading || authLoading) && <RiLoader4Line className="w-4 h-4 mr-2 animate-spin" />}
-                Google로 시작하기
-              </Button>
             </section>
           ) : authLoading || isLoading ? (
             Array.from({ length: 3 }).map((_, i) => (

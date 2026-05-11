@@ -1,8 +1,9 @@
-import { Geist, Geist_Mono, Roboto_Slab, Public_Sans } from "next/font/google"
+﻿import { Geist, Geist_Mono, Roboto_Slab, Public_Sans } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils";
+import { Toaster } from "sonner";
 
 const publicSansHeading = Public_Sans({ subsets: ['latin'], variable: '--font-heading' });
 
@@ -30,7 +31,10 @@ export default function RootLayout({
       className={cn("antialiased", fontSans.variable, fontMono.variable, "font-serif", robotoSlab.variable, publicSansHeading.variable)}
     >
       <body>
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <Toaster richColors position="top-center" />
+        </ThemeProvider>
       </body>
     </html>
   )
