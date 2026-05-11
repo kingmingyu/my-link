@@ -17,6 +17,8 @@ export interface UserProfile {
   email: string;
   username: string;
   displayName: string;
+  photoURL: string | null;
+  providerId: string | null;
   bio: string;
   theme: {
     bgColor: string;
@@ -87,6 +89,25 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
   }
   
   return null;
+};
+
+/**
+ * Username으로 유저 프로필 정보를 가져옵니다.
+ */
+export const getUserByUsername = async (username: string): Promise<UserProfile | null> => {
+  const usersRef = collection(db, "users");
+  const q = query(
+    usersRef, 
+    where("username", "==", username),
+    limit(1)
+  );
+  
+  const querySnapshot = await getDocs(q);
+  
+  if (querySnapshot.empty) return null;
+  
+  const userDoc = querySnapshot.docs[0];
+  return { uid: userDoc.id, ...userDoc.data() } as UserProfile;
 };
 
 /**

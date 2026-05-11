@@ -31,6 +31,7 @@ import {
 import {
   doc,
   setDoc,
+  getDoc,
   updateDoc,
   deleteDoc,
   collection,
@@ -530,14 +531,14 @@ export default function Page() {
   const email = userProfile?.email || user?.email || "";
 
   const publicProfilePath = useMemo(() => {
-    if (!user) {
-      return "";
+    if (!userProfile?.username) {
+      return user ? `/${user.uid}` : "";
     }
-    return `/${user.uid}`;
-  }, [user]);
+    return `/${userProfile.username}`;
+  }, [userProfile, user]);
 
   const getPublicProfileUrl = () => {
-    if (!user) {
+    if (!publicProfilePath) {
       return "";
     }
     if (typeof window === "undefined") {
@@ -746,7 +747,7 @@ export default function Page() {
       <div className="w-full max-w-[480px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out fill-mode-both">
         {user && (
           <header className="flex flex-col items-center text-center mb-8">
-            <div className="relative mb-5">
+            <div className="relative mb-5 flex items-center justify-center w-full">
               <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-purple-500 to-pink-500 shadow-xl shadow-purple-500/20">
                 <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 overflow-hidden flex items-center justify-center border-2 border-transparent">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -757,6 +758,19 @@ export default function Page() {
                   />
                 </div>
               </div>
+              
+              {/* 내 페이지 바로가기 버튼 */}
+              <Link 
+                href={publicProfilePath}
+                target="_blank"
+                className="absolute left-[calc(50%+56px)] p-2.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white shadow-xl shadow-purple-500/20 hover:scale-110 transition-all duration-200 group border-2 border-white dark:border-slate-900"
+                title="내 페이지 바로가기"
+              >
+                <RiExternalLinkLine className="w-5 h-5" />
+                <span className="absolute left-full ml-2 px-2 py-1 rounded-md bg-slate-900 text-white text-[10px] font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none hidden md:block">
+                  내 페이지 방문
+                </span>
+              </Link>
             </div>
 
             <p className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5 justify-center">
