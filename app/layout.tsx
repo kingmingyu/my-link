@@ -4,9 +4,9 @@ import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { cn } from "@/lib/utils";
 
-const publicSansHeading = Public_Sans({subsets:['latin'],variable:'--font-heading'});
+const publicSansHeading = Public_Sans({ subsets: ['latin'], variable: '--font-heading' });
 
-const robotoSlab = Roboto_Slab({subsets:['latin'],variable:'--font-serif'});
+const robotoSlab = Roboto_Slab({ subsets: ['latin'], variable: '--font-serif' });
 
 const fontSans = Geist({
   subsets: ["latin"],
