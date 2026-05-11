@@ -16,12 +16,18 @@ import {
   RiLogoutBoxRLine,
   RiShareLine,
   RiEyeLine,
+  RiUserLine,
 } from "@remixicon/react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { auth, db } from "@/lib/firebase";
+import { 
+  checkDisplayNameDuplicate, 
+  checkUsernameDuplicate,
+  updateUserProfile 
+} from "@/lib/user";
 import {
   doc,
   setDoc,
@@ -52,6 +58,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -76,9 +83,11 @@ type LinkItem = {
 type UserProfile = {
   uid: string;
   email: string | null;
+  username: string | null;
   displayName: string | null;
   photoURL: string | null;
   providerId: string | null;
+  bio: string | null;
 };
 
 const formSchema = z.object({
@@ -172,6 +181,191 @@ function InlineEditForm({
   );
 }
 
+function ProfileEditModal({
+  user,
+  userProfile,
+  open,
+  onOpenChange,
+}: {
+  user: User | null;
+  userProfile: UserProfile | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [checking, setChecking] = useState(false);
+  const [isUsernameChecked, setIsUsernameChecked] = useState(true);
+
+  const profileSchema = z.object({
+    username: z
+      .string()
+      .min(3, { message: "아이디는 최소 3자 이상이어야 합니다." })
+      .max(15, { message: "아이디는 최대 15자 이내여야 합니다." })
+      .regex(/^[a-z0-9_-]+$/, {
+        message: "아이디는 영문 소문자, 숫자, 하이픈(-), 언더바(_)만 가능합니다.",
+      }),
+    displayName: z
+      .string()
+      .min(2, { message: "표시 이름은 최소 2자 이상이어야 합니다." })
+      .max(30, { message: "표시 이름은 최대 30자 이내여야 합니다." }),
+    bio: z.string().max(80, { message: "자기소개는 최대 80자 이내여야 합니다." }).optional(),
+  });
+
+  type ProfileValues = z.infer<typeof profileSchema>;
+
+  const profileForm = useForm<ProfileValues>({
+    resolver: zodResolver(profileSchema),
+    defaultValues: {
+      username: userProfile?.username || "",
+      displayName: userProfile?.displayName || "",
+      bio: userProfile?.bio || "",
+    },
+  });
+
+  // 데이터 로드 시 폼 초기화
+  useEffect(() => {
+    if (userProfile) {
+      profileForm.reset({
+        username: userProfile.username || "",
+        displayName: userProfile.displayName || "",
+        bio: userProfile.bio || "",
+      });
+    }
+  }, [userProfile, profileForm]);
+
+  const onCheckUsername = async () => {
+    const username = profileForm.getValues("username");
+    const result = profileSchema.shape.username.safeParse(username);
+    
+    if (!result.success) {
+      toast.error(result.error.issues[0].message);
+      return;
+    }
+
+    if (username === userProfile?.username) {
+      setIsUsernameChecked(true);
+      toast.info("현재 사용 중인 아이디입니다.");
+      return;
+    }
+
+    setChecking(true);
+    try {
+      const isDuplicate = await checkUsernameDuplicate(username, user?.uid);
+      if (isDuplicate) {
+        toast.error("이미 사용 중인 아이디입니다.");
+        setIsUsernameChecked(false);
+      } else {
+        toast.success("사용 가능한 아이디입니다.");
+        setIsUsernameChecked(true);
+      }
+    } catch (error) {
+      toast.error("중복 확인 중 오류가 발생했습니다.");
+    } finally {
+      setChecking(false);
+    }
+  };
+
+  const onSaveProfile = async (values: ProfileValues) => {
+    if (!user) return;
+    if (!isUsernameChecked && values.username !== userProfile?.username) {
+      toast.error("아이디 중복 확인이 필요합니다.");
+      return;
+    }
+
+    try {
+      await updateUserProfile(user.uid, values);
+      toast.success("프로필을 업데이트했습니다.");
+      onOpenChange(false);
+    } catch (error) {
+      toast.error("프로필 업데이트에 실패했습니다.");
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>프로필 수정</DialogTitle>
+          <DialogDescription>내 프로필 정보를 수정하고 관리하세요.</DialogDescription>
+        </DialogHeader>
+
+        <Form {...profileForm}>
+          <form onSubmit={profileForm.handleSubmit(onSaveProfile)} className="space-y-4 pt-2">
+            <FormField
+              control={profileForm.control}
+              name="username"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>아이디 (URL 주소)</FormLabel>
+                  <div className="flex gap-2">
+                    <FormControl>
+                      <Input
+                        placeholder="english-only-id"
+                        {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          setIsUsernameChecked(false);
+                        }}
+                      />
+                    </FormControl>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={onCheckUsername}
+                      disabled={checking || !!(userProfile && field.value === userProfile.username)}
+                    >
+                      {checking ? <RiLoader4Line className="w-4 h-4 animate-spin" /> : "중복 확인"}
+                    </Button>
+                  </div>
+                  <FormDescription className="text-[11px]">
+                    영문 소문자, 숫자, -, _ 만 사용하여 3~15자로 입력해주세요.
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={profileForm.control}
+              name="displayName"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>표시 이름</FormLabel>
+                  <FormControl>
+                    <Input placeholder="활동명 입력" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={profileForm.control}
+              name="bio"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>자기소개 (최대 80자)</FormLabel>
+                  <FormControl>
+                    <Input placeholder="나를 표현하는 짧은 문구" maxLength={80} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <DialogFooter className="pt-4">
+              <Button type="submit" disabled={profileForm.formState.isSubmitting} className="w-full">
+                {profileForm.formState.isSubmitting && <RiLoader4Line className="w-4 h-4 mr-2 animate-spin" />}
+                저장하기
+              </Button>
+            </DialogFooter>
+          </form>
+        </Form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 function DeleteConfirmModal({
   link,
   open,
@@ -227,6 +421,7 @@ export default function Page() {
   const [deleteTarget, setDeleteTarget] = useState<LinkItem | null>(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -261,19 +456,32 @@ export default function Page() {
 
     const userDocRef = doc(db, "users", user.uid);
 
-    void setDoc(
-      userDocRef,
-      {
-        uid: user.uid,
-        email: user.email ?? null,
-        displayName: user.displayName ?? null,
-        photoURL: user.photoURL ?? null,
-        providerId: user.providerData[0]?.providerId ?? null,
-        updatedAt: serverTimestamp(),
-        lastLoginAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
+    // 유저 데이터가 있는지 먼저 확인 후, 없을 때만 초기값 설정
+    const initUser = async () => {
+      const userSnap = await getDoc(userDocRef);
+      
+      if (!userSnap.exists()) {
+        const emailPrefix = user.email?.split("@")[0] ?? "";
+        await setDoc(userDocRef, {
+          uid: user.uid,
+          email: user.email ?? null,
+          username: emailPrefix,
+          displayName: user.displayName ?? null,
+          photoURL: user.photoURL ?? null,
+          providerId: user.providerData[0]?.providerId ?? null,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+          lastLoginAt: serverTimestamp(),
+        });
+      } else {
+        // 기존 유저라면 마지막 로그인 시간만 업데이트
+        await updateDoc(userDocRef, {
+          lastLoginAt: serverTimestamp(),
+        });
+      }
+    };
+
+    void initUser();
 
     const unsubscribeProfile = onSnapshot(userDocRef, (snapshot) => {
       if (!snapshot.exists()) {
@@ -554,7 +762,29 @@ export default function Page() {
             <p className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5 justify-center">
               {displayName}
               <RiVerifiedBadgeFill className="w-5 h-5 text-blue-500" />
+              <button
+                type="button"
+                onClick={() => setIsProfileModalOpen(true)}
+                className="ml-1 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-purple-600 transition-colors"
+                title="프로필 수정"
+              >
+                <RiPencilLine className="w-4 h-4" />
+              </button>
             </p>
+            {userProfile?.username && (
+              <p className="mt-1 text-sm font-medium text-slate-400 dark:text-slate-500">
+                @{userProfile.username}
+              </p>
+            )}
+            {userProfile?.bio ? (
+              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400 max-w-[300px] line-clamp-2">
+                {userProfile.bio}
+              </p>
+            ) : (
+              <p className="mt-2 text-sm text-slate-400 dark:text-slate-500 italic">
+                자기소개를 입력해주세요
+              </p>
+            )}
           </header>
         )}
 
@@ -793,6 +1023,13 @@ export default function Page() {
         }}
         onConfirm={onDeleteConfirm}
         isDeleting={isDeleting}
+      />
+
+      <ProfileEditModal
+        user={user}
+        userProfile={userProfile}
+        open={isProfileModalOpen}
+        onOpenChange={setIsProfileModalOpen}
       />
     </div>
   );
