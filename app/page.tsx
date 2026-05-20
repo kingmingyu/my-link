@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
@@ -971,7 +971,13 @@ export default function Page() {
                                 <RiLinkM className="w-6 h-6 text-slate-400 dark:text-slate-500" />
                               )}
                             </div>
-                            <span className="font-semibold text-[15px] text-slate-800 dark:text-slate-100 tracking-tight truncate">{link.title}</span>
+                            <div className="flex flex-col flex-1 min-w-0">
+                              <span className="font-semibold text-[15px] text-slate-800 dark:text-slate-100 tracking-tight truncate">{link.title}</span>
+                              <div className="flex items-center gap-1 mt-0.5 text-slate-500 dark:text-slate-400">
+                                <RiEyeLine className="w-3.5 h-3.5" />
+                                <span className="text-[11px] font-medium tracking-tight">{link.clickCount || 0}</span>
+                              </div>
+                            </div>
                             <RiExternalLinkLine className="w-4 h-4 shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-purple-400 dark:group-hover:text-purple-400 transition-colors duration-200 ml-auto" />
                           </div>
 
