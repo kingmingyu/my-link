@@ -17,6 +17,7 @@ import {
   RiShareLine,
   RiEyeLine,
   RiUserLine,
+  RiBarChartLine,
 } from "@remixicon/react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
@@ -727,6 +728,15 @@ export default function Page() {
                 <RiShareLine className="w-4 h-4" />
                 내 링크 복사
               </button>
+
+              <Link
+                href="/stats"
+                className="w-full px-3 py-2.5 text-left text-sm rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 flex items-center gap-2"
+                onClick={() => setProfileMenuOpen(false)}
+              >
+                <RiBarChartLine className="w-4 h-4" />
+                통계 보기
+              </Link>
 
               <div className="my-1 border-t border-slate-100 dark:border-slate-800" />
 
