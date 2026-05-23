@@ -50,7 +50,7 @@ export default function Image() {
         <div style={{ display: 'flex', width: '100%', height: '100%', alignItems: 'center', padding: '0 80px' }}>
           
           {/* 왼쪽: 텍스트 영역 */}
-          <div style={{ display: 'flex', flexDirection: 'column', flex: 1.1 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', flex: 1.1, paddingRight: '40px' }}>
             <div
               style={{
                 display: 'flex',
@@ -93,18 +93,24 @@ export default function Image() {
             >
               단 하나의 링크로.
             </h1>
-            <p
+            <div
               style={{
-                fontSize: '28px',
-                fontWeight: 600,
-                color: '#475569',
+                display: 'flex',
+                flexDirection: 'column',
                 marginTop: '36px',
-                marginBottom: 0,
-                lineHeight: 1.5,
+                gap: '8px',
               }}
             >
-              인스타그램, 유튜브, 블로그.<br />여러 곳에 흩어진 나의 기록들을<br />하나의 페이지에 모아보세요.
-            </p>
+              <span style={{ fontSize: '28px', fontWeight: 600, color: '#475569' }}>
+                인스타그램, 유튜브, 블로그.
+              </span>
+              <span style={{ fontSize: '28px', fontWeight: 600, color: '#475569' }}>
+                여러 곳에 흩어진 나의 기록들을
+              </span>
+              <span style={{ fontSize: '28px', fontWeight: 600, color: '#475569' }}>
+                하나의 페이지에 모아보세요.
+              </span>
+            </div>
             
             {/* 하단 로고 */}
             <div style={{ marginTop: '56px', display: 'flex', alignItems: 'center' }}>
