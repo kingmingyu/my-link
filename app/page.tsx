@@ -18,6 +18,9 @@ import {
   RiEyeLine,
   RiUserLine,
   RiBarChartLine,
+  RiMagicLine,
+  RiLayoutMasonryLine,
+  RiArrowRightLine,
 } from "@remixicon/react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { z } from "zod";
@@ -879,62 +882,192 @@ export default function Page() {
 
         <main className="flex flex-col gap-4 w-full">
           {!user ? (
-            <section className="w-screen relative left-1/2 right-1/2 -mx-[50vw] bg-slate-100 dark:bg-slate-950 border-y border-slate-200 dark:border-slate-800">
-              <div className="mx-auto max-w-6xl">
-                <div className="h-14 px-6 flex items-center justify-between border-b border-slate-200 dark:border-slate-800">
-                  <span className="text-xl font-extrabold tracking-tight text-blue-600 dark:text-blue-400">MyLink</span>
+            <div className="w-screen relative left-1/2 right-1/2 -mx-[50vw] bg-white dark:bg-slate-950 flex flex-col font-sans">
+              {/* Header */}
+              <header className="sticky top-0 z-50 w-full border-b border-slate-200/50 dark:border-slate-800/50 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md">
+                <div className="mx-auto max-w-6xl h-16 px-6 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-purple-600 to-pink-500 flex items-center justify-center shadow-md shadow-purple-500/20">
+                      <RiLinkM className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-500">MyLink</span>
+                  </div>
                   <button
                     type="button"
                     onClick={signInWithGoogle}
                     disabled={authActionLoading || authLoading}
-                    className="h-9 px-4 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold disabled:opacity-60"
+                    className="h-9 px-5 rounded-full bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-sm font-semibold hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors disabled:opacity-60 shadow-sm"
                   >
-                    로그인
+                    시작하기
                   </button>
                 </div>
+              </header>
 
-                <div className="px-6 py-20 md:py-24 text-center">
-                  <h2 className="text-5xl md:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-slate-100 leading-[0.95]">
-                    Development in <span className="text-blue-600 dark:text-blue-400">One Link</span>.
-                  </h2>
-                  <p className="mt-8 text-lg text-slate-600 dark:text-slate-400 leading-relaxed">
-                    여러 플랫폼의 링크를 한곳에 모으고,
-                    <br />
-                    하나의 페이지로 깔끔하게 정리해 공유해보세요.
+              {/* Hero Section */}
+              <section className="relative overflow-hidden px-6 pt-24 pb-32 md:pt-32 md:pb-40 text-center">
+                {/* Background Decoration */}
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-500/10 dark:bg-purple-500/5 rounded-full blur-3xl -z-10" />
+                <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-pink-500/10 dark:bg-pink-500/5 rounded-full blur-3xl -z-10" />
+
+                <div className="mx-auto max-w-4xl animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-sm font-medium mb-6">
+                    <RiMagicLine className="w-4 h-4" />
+                    <span>나만의 프로필 링크를 만들어보세요</span>
+                  </div>
+                  <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight text-slate-900 dark:text-white leading-[1.1] mb-8">
+                    당신의 모든 콘텐츠를 <br className="hidden md:block" />
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-purple-600 to-pink-500">단 하나의 링크</span>로.
+                  </h1>
+                  <p className="text-lg md:text-xl text-slate-600 dark:text-slate-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+                    인스타그램, 유튜브, 블로그, 포트폴리오까지. <br className="md:hidden" />
+                    여러 곳에 흩어진 나의 기록들을 하나의 페이지로 예쁘게 담아 공유하세요.
                   </p>
-
-                  <div className="mt-10 flex justify-center">
+                  
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                     <Button
                       type="button"
-                      className="h-12 px-8 rounded-md bg-blue-600 hover:bg-blue-700 text-white text-base font-semibold min-w-80"
+                      className="h-14 px-8 rounded-full bg-purple-600 hover:bg-purple-700 text-white text-lg font-bold shadow-xl shadow-purple-600/20 hover:scale-105 transition-all duration-300 w-full sm:w-auto group"
                       onClick={signInWithGoogle}
                       disabled={authActionLoading || authLoading}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src="https://www.google.com/s2/favicons?domain=google.com&sz=128" alt="google" className="w-5 h-5 mr-2 rounded-full" />
-                      {(authActionLoading || authLoading) && <RiLoader4Line className="w-4 h-4 mr-2 animate-spin" />}
-                      Google로 시작하기
+                      <img src="https://www.google.com/s2/favicons?domain=google.com&sz=128" alt="google" className="w-5 h-5 mr-3 rounded-full bg-white p-0.5" />
+                      {(authActionLoading || authLoading) && <RiLoader4Line className="w-5 h-5 mr-2 animate-spin" />}
+                      무료로 시작하기
+                      <RiArrowRightLine className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
                     </Button>
                   </div>
+                </div>
 
-                  <div className="mt-16 max-w-md mx-auto rounded-3xl border border-slate-200 dark:border-slate-700 bg-white/90 dark:bg-slate-900/80 p-5 shadow-sm">
-                    <div className="rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                      <div className="h-10 px-3 flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
-                        <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
-                        <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                        <div className="ml-2 h-6 flex-1 rounded-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700" />
+                {/* Animated Mockup */}
+                <div className="mt-20 mx-auto max-w-[320px] relative animate-in fade-in slide-in-from-bottom-12 duration-1000 delay-300 fill-mode-both">
+                  <div className="relative rounded-[2.5rem] border-[8px] border-slate-900 dark:border-slate-800 bg-slate-50 dark:bg-slate-900 overflow-hidden shadow-2xl h-[600px] flex flex-col group hover:-translate-y-4 transition-transform duration-700 ease-out">
+                    {/* Notch */}
+                    <div className="absolute top-0 inset-x-0 h-6 bg-slate-900 dark:bg-slate-800 rounded-b-3xl mx-auto w-32 z-20" />
+                    
+                    {/* Profile Header */}
+                    <div className="px-6 pt-12 pb-6 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-950/50 dark:to-purple-900/50 flex flex-col items-center">
+                      <div className="w-20 h-20 rounded-full bg-gradient-to-tr from-purple-500 to-pink-500 p-1 shadow-lg group-hover:scale-105 transition-transform duration-500">
+                        <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 flex items-center justify-center overflow-hidden">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src="https://api.dicebear.com/9.x/notionists/svg?seed=Felix&backgroundColor=f8fafc" alt="avatar" className="w-full h-full object-cover" />
+                        </div>
                       </div>
-                      <div className="p-4 bg-white dark:bg-slate-900 space-y-3">
-                        <div className="h-11 rounded-xl bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/50" />
-                        <div className="h-11 rounded-xl bg-slate-100 dark:bg-slate-800" />
-                        <div className="h-11 rounded-xl bg-slate-100 dark:bg-slate-800" />
-                      </div>
+                      <h3 className="mt-4 font-bold text-lg text-slate-900 dark:text-white flex items-center gap-1">
+                        Creator Name <RiVerifiedBadgeFill className="w-4 h-4 text-blue-500" />
+                      </h3>
+                      <p className="text-sm text-slate-500">@username</p>
+                    </div>
+
+                    {/* Links List */}
+                    <div className="flex-1 px-4 py-4 space-y-3 bg-slate-50 dark:bg-slate-900 relative">
+                      {[1, 2, 3].map((i) => (
+                        <div 
+                          key={i} 
+                          className="w-full h-14 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200/50 dark:border-slate-700/50 flex items-center px-4 gap-3 animate-in fade-in slide-in-from-bottom-4 fill-mode-both"
+                          style={{ animationDelay: `${500 + i * 150}ms` }}
+                        >
+                          <div className={`w-8 h-8 rounded-lg shrink-0 ${i === 1 ? 'bg-red-100 text-red-500' : i === 2 ? 'bg-blue-100 text-blue-500' : 'bg-purple-100 text-purple-500'} flex items-center justify-center`}>
+                            <RiLinkM className="w-4 h-4" />
+                          </div>
+                          <div className="flex-1 h-3 rounded-full bg-slate-100 dark:bg-slate-700" />
+                          <div className="w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-700" />
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
-              </div>
-            </section>
+              </section>
+
+              {/* Features Section */}
+              <section className="py-24 px-6 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200/50 dark:border-slate-800/50">
+                <div className="mx-auto max-w-6xl">
+                  <div className="text-center mb-16">
+                    <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-4 tracking-tight">왜 MyLink를 써야 할까요?</h2>
+                    <p className="text-slate-600 dark:text-slate-400">복잡한 설정 없이, 누구나 쉽고 빠르게 시작할 수 있습니다.</p>
+                  </div>
+                  
+                  <div className="grid md:grid-cols-3 gap-8">
+                    {[
+                      {
+                        icon: RiLayoutMasonryLine,
+                        title: "단 하나의 링크",
+                        desc: "인스타그램, 유튜브, 블로그 등 모든 채널을 하나의 페이지에 깔끔하게 모아보세요.",
+                        color: "text-purple-600 bg-purple-100 dark:bg-purple-900/30 dark:text-purple-400",
+                      },
+                      {
+                        icon: RiMagicLine,
+                        title: "쉬운 커스터마이징",
+                        desc: "드래그 앤 드롭으로 링크 순서를 변경하고 나만의 테마로 꾸밀 수 있습니다.",
+                        color: "text-pink-600 bg-pink-100 dark:bg-pink-900/30 dark:text-pink-400",
+                      },
+                      {
+                        icon: RiBarChartLine,
+                        title: "방문자 통계",
+                        desc: "누가 내 링크를 클릭했는지, 어떤 링크가 가장 인기가 많은지 한눈에 확인하세요.",
+                        color: "text-blue-600 bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400",
+                      }
+                    ].map((feature, idx) => (
+                      <div key={idx} className="bg-white dark:bg-slate-900 p-8 rounded-3xl border border-slate-200/60 dark:border-slate-800 shadow-sm hover:shadow-xl transition-shadow group">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 ${feature.color} group-hover:scale-110 transition-transform duration-300`}>
+                          <feature.icon className="w-7 h-7" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-3">{feature.title}</h3>
+                        <p className="text-slate-600 dark:text-slate-400 leading-relaxed">{feature.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* How it Works Section */}
+              <section className="py-24 px-6 bg-white dark:bg-slate-950">
+                <div className="mx-auto max-w-4xl text-center">
+                  <h2 className="text-3xl md:text-4xl font-bold text-slate-900 dark:text-white mb-16 tracking-tight">단 3단계면 충분합니다</h2>
+                  <div className="flex flex-col md:flex-row items-center justify-center gap-8 md:gap-4 relative">
+                    <div className="hidden md:block absolute top-8 left-[15%] right-[15%] h-0.5 bg-slate-200 dark:bg-slate-800 -z-10" />
+                    
+                    {[
+                      { step: 1, title: "가입하기", desc: "구글 계정으로 3초만에 가입하세요" },
+                      { step: 2, title: "링크 추가하기", desc: "공유하고 싶은 URL들을 입력하세요" },
+                      { step: 3, title: "공유하기", desc: "나만의 MyLink 주소를 널리 알리세요" }
+                    ].map((item) => (
+                      <div key={item.step} className="flex-1 flex flex-col items-center bg-white dark:bg-slate-950 p-4">
+                        <div className="w-16 h-16 rounded-full bg-slate-900 dark:bg-slate-800 text-white flex items-center justify-center text-2xl font-bold mb-6 border-4 border-white dark:border-slate-950 shadow-md">
+                          {item.step}
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-2">{item.title}</h3>
+                        <p className="text-slate-500 dark:text-slate-400">{item.desc}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </section>
+
+              {/* Bottom CTA */}
+              <section className="py-32 px-6 relative overflow-hidden bg-slate-900 dark:bg-slate-950 border-t border-slate-800">
+                <div className="absolute inset-0 opacity-20 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-purple-600 via-slate-900 to-slate-900" />
+                <div className="mx-auto max-w-4xl text-center relative z-10">
+                  <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-6 tracking-tight">
+                    지금 바로 나만의 링크를 만드세요
+                  </h2>
+                  <p className="text-xl text-slate-300 mb-10 max-w-2xl mx-auto font-medium">
+                    수천 명의 크리에이터들이 이미 MyLink와 함께하고 있습니다.
+                  </p>
+                  <Button
+                    type="button"
+                    className="h-14 px-10 rounded-full bg-white hover:bg-slate-100 text-slate-900 text-lg font-bold w-full sm:w-auto group"
+                    onClick={signInWithGoogle}
+                    disabled={authActionLoading || authLoading}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src="https://www.google.com/s2/favicons?domain=google.com&sz=128" alt="google" className="w-5 h-5 mr-3 rounded-full" />
+                    무료로 시작하기
+                    <RiArrowRightLine className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </div>
+              </section>
+            </div>
           ) : authLoading || isLoading ? (
             Array.from({ length: 3 }).map((_, i) => (
               <div key={`skeleton-${i}`} className="w-full rounded-2xl animate-pulse">
