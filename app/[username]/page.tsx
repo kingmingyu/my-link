@@ -1,3 +1,4 @@
+import type { Metadata, ResolvingMetadata } from "next";
 import { getUserByUsername } from "@/lib/user";
 import { getLinks } from "@/lib/link";
 import { notFound } from "next/navigation";
@@ -11,6 +12,40 @@ interface PageProps {
   params: Promise<{
     username: string;
   }>;
+}
+
+export async function generateMetadata(
+  { params }: PageProps,
+  parent: ResolvingMetadata
+): Promise<Metadata> {
+  const { username } = await params;
+  const userProfile = await getUserByUsername(username);
+
+  if (!userProfile) {
+    return {
+      title: "User Not Found",
+      description: "해당 사용자를 찾을 수 없습니다.",
+    };
+  }
+
+  const title = userProfile.displayName || userProfile.username || "MyLink Profile";
+  const description = userProfile.bio || `${title}님의 MyLink 프로필입니다. 하나의 링크로 모든 프로필과 콘텐츠를 확인하세요.`;
+
+  return {
+    title,
+    description,
+    openGraph: {
+      title,
+      description,
+      type: "profile",
+      url: `/${userProfile.username}`,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+    },
+  };
 }
 
 export default async function VisitorPage({ params }: PageProps) {
