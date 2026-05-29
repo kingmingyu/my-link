@@ -18,6 +18,7 @@ export type LinkItem = {
   isActive: boolean;
   order: number;
   clickCount: number;
+  highlightStyle?: 'none' | 'bounce' | 'glow';
   createdAt: string;
   updatedAt: string;
 };

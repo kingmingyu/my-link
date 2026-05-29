@@ -48,6 +48,8 @@ export async function generateMetadata(
   };
 }
 
+import DynamicBackground from "@/components/ui/DynamicBackground";
+
 export default async function VisitorPage({ params }: PageProps) {
   const { username } = await params;
   
@@ -63,9 +65,14 @@ export default async function VisitorPage({ params }: PageProps) {
   const links = allLinks.filter(link => link.isActive);
 
   return (
-    <div className="flex min-h-dvh flex-col items-center px-4 py-16 bg-gradient-to-br from-indigo-50 via-white to-purple-50 dark:from-slate-950 dark:via-slate-900 dark:to-slate-800 font-sans">
-      <div className="w-full max-w-[480px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out fill-mode-both">
-        {/* Profile Header */}
+    <>
+      <DynamicBackground 
+        backgroundType={userProfile.theme?.backgroundType}
+        backgroundColors={userProfile.theme?.backgroundColors}
+      />
+      <div className="flex min-h-dvh flex-col items-center px-4 py-16 font-sans relative z-10">
+        <div className="w-full max-w-[480px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out fill-mode-both">
+          {/* Profile Header */}
         <header className="flex flex-col items-center text-center mb-10">
           <div className="relative mb-6">
             <div className="w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-purple-500 to-pink-500 shadow-xl shadow-purple-500/20">
@@ -129,6 +136,7 @@ export default async function VisitorPage({ params }: PageProps) {
           </p>
         </footer>
       </div>
-    </div>
+      </div>
+    </>
   );
 }

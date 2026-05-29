@@ -23,6 +23,8 @@ export interface UserProfile {
   theme: {
     bgColor: string;
     btnShape: string;
+    backgroundType?: 'color' | 'gradient' | 'mesh';
+    backgroundColors?: string[];
   };
   totalPageViews: number;
   createdAt: any;
