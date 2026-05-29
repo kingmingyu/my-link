@@ -11,6 +11,8 @@ import {
   orderBy,
   onSnapshot,
   limit,
+  where,
+  documentId,
 } from "firebase/firestore"
 import { type LinkItem } from "@/lib/link"
 import {
@@ -92,6 +94,13 @@ export default function StatsPage() {
     return () => unsubscribe()
   }, [user])
 
+  // 최근 7일 트래픽 데이터 날짜 생성
+  const last7Days = Array.from({ length: 7 }).map((_, i) => {
+    const d = new Date()
+    d.setDate(d.getDate() - (6 - i))
+    return d.toISOString().split("T")[0]
+  })
+
   // 3. 일별 통계 데이터 구독
   useEffect(() => {
     if (!user) return
@@ -99,8 +108,7 @@ export default function StatsPage() {
     setStatsLoading(true)
     const q = query(
       collection(db, "users", user.uid, "daily_stats"),
-      orderBy("__name__", "desc"),
-      limit(7)
+      where(documentId(), "in", last7Days)
     )
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -113,7 +121,7 @@ export default function StatsPage() {
     })
 
     return () => unsubscribe()
-  }, [user])
+  }, [user, last7Days.join(",")])
 
   // 통계 계산
   const totalClicks = links.reduce((sum, l) => sum + (l.clickCount ?? 0), 0)
@@ -122,13 +130,6 @@ export default function StatsPage() {
   const topLink = [...links].sort(
     (a, b) => (b.clickCount ?? 0) - (a.clickCount ?? 0)
   )[0]
-
-  // 최근 7일 트래픽 데이터 생성
-  const last7Days = Array.from({ length: 7 }).map((_, i) => {
-    const d = new Date()
-    d.setDate(d.getDate() - (6 - i))
-    return d.toISOString().split("T")[0]
-  })
 
   const trafficData = last7Days.map((date) => {
     const stat = dailyStats.find((s) => s.id === date)
@@ -140,14 +141,27 @@ export default function StatsPage() {
     }
   })
 
+  const CHART_COLORS = [
+    "#f43f5e", // rose-500
+    "#8b5cf6", // violet-500
+    "#0ea5e9", // sky-500
+    "#10b981", // emerald-500
+    "#f59e0b", // amber-500
+    "#d946ef", // fuchsia-500
+    "#3b82f6", // blue-500
+    "#84cc16", // lime-500
+    "#f97316", // orange-500
+    "#06b6d4", // cyan-500
+  ];
+
   const trafficConfig = {
     pv: {
       label: "페이지뷰(PV)",
-      color: "hsl(var(--chart-1))",
+      color: CHART_COLORS[0],
     },
     clicks: {
       label: "클릭 수",
-      color: "hsl(var(--chart-2))",
+      color: CHART_COLORS[1],
     },
   } satisfies ChartConfig
 
@@ -160,7 +174,7 @@ export default function StatsPage() {
       name: l.title.length > 10 ? l.title.slice(0, 9) + "…" : l.title,
       fullName: l.title,
       clicks: l.clickCount ?? 0,
-      fill: `hsl(var(--chart-${(i % 5) + 1}))`,
+      fill: CHART_COLORS[i % CHART_COLORS.length],
     }))
 
   const pieConfig = pieData.reduce(
@@ -184,13 +198,13 @@ export default function StatsPage() {
       name: l.title.length > 14 ? l.title.slice(0, 13) + "…" : l.title,
       fullName: l.title,
       clicks: l.clickCount ?? 0,
-      fill: `hsl(var(--chart-${(i % 5) + 1}))`,
+      fill: CHART_COLORS[i % CHART_COLORS.length],
     }))
 
   const barConfig = {
     clicks: {
       label: "클릭수",
-      color: "hsl(var(--chart-1))",
+      color: CHART_COLORS[0],
     },
   } satisfies ChartConfig
 
@@ -417,7 +431,7 @@ export default function StatsPage() {
                   ) : (
                     <ChartContainer
                       config={pieConfig}
-                      className="min-h-[250px] w-full pb-4"
+                      className="mx-auto aspect-square max-h-[250px] pb-0"
                     >
                       <PieChart>
                         <ChartTooltip
@@ -427,8 +441,8 @@ export default function StatsPage() {
                           data={pieData}
                           dataKey="clicks"
                           nameKey="name"
-                          innerRadius={60}
-                          outerRadius={90}
+                          innerRadius={45}
+                          outerRadius={70}
                           strokeWidth={4}
                           stroke="var(--color-background)"
                           paddingAngle={2}
@@ -437,9 +451,7 @@ export default function StatsPage() {
                             <Cell key={`cell-${index}`} fill={entry.fill} />
                           ))}
                         </Pie>
-                        <ChartLegend
-                          content={<ChartLegendContent className="flex-wrap" />}
-                        />
+                        <ChartLegend content={<ChartLegendContent className="flex-wrap gap-2 justify-center pb-2 text-xs" />} />
                       </PieChart>
                     </ChartContainer>
                   )}

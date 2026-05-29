@@ -7,6 +7,7 @@ import { RiExternalLinkLine, RiLinkM, RiVerifiedBadgeFill } from "@remixicon/rea
 import Link from "next/link";
 import Image from "next/image";
 import VisitorLinkItem from "./VisitorLinkItem";
+import ViewTracker from "./ViewTracker";
 
 interface PageProps {
   params: Promise<{
@@ -71,6 +72,7 @@ export default async function VisitorPage({ params }: PageProps) {
         backgroundColors={userProfile.theme?.backgroundColors}
       />
       <div className="flex min-h-dvh flex-col items-center px-4 py-16 font-sans relative z-10">
+        <ViewTracker uid={userProfile.uid} />
         <div className="w-full max-w-[480px] mx-auto animate-in fade-in slide-in-from-bottom-4 duration-700 ease-out fill-mode-both">
           {/* Profile Header */}
         <header className="flex flex-col items-center text-center mb-10">
