@@ -203,7 +203,10 @@ export default function StatsPage() {
                   </div>
                   {topLink ? (
                     <>
-                      <p className="text-4xl font-extrabold tracking-tight text-slate-900 dark:text-white truncate leading-tight">
+                      <p 
+                        className="text-xl md:text-2xl font-bold tracking-tight text-slate-900 dark:text-white truncate leading-tight mt-1 mb-1"
+                        title={topLink.title}
+                      >
                         {topLink.title}
                       </p>
                       <p className="mt-1 text-xs text-slate-400 dark:text-slate-500">

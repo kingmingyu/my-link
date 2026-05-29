@@ -449,6 +449,7 @@ function SortableLinkItem({
   isEditing,
   onEditSave,
   onEditCancel,
+  disableDrag,
 }: {
   link: LinkItem;
   onEdit: () => void;
@@ -457,8 +458,9 @@ function SortableLinkItem({
   isEditing: boolean;
   onEditSave: (values: FormValues) => Promise<void>;
   onEditCancel: () => void;
+  disableDrag?: boolean;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link.id });
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link.id, disabled: disableDrag });
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -478,7 +480,7 @@ function SortableLinkItem({
           <a href={link.url} target="_blank" rel="noopener noreferrer" className="absolute inset-0 z-0" title={`${link.title} 열기`} />
 
           <CardContent className="relative z-10 p-4 flex items-center justify-between gap-3 pointer-events-none">
-            <div className="flex items-center gap-2 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 dark:hover:text-slate-400 shrink-0 pointer-events-auto" {...attributes} {...listeners}>
+            <div className={`flex items-center gap-2 shrink-0 pointer-events-auto ${disableDrag ? 'text-slate-200 dark:text-slate-700 cursor-not-allowed' : 'cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 dark:hover:text-slate-400'}`} {...attributes} {...listeners}>
               <RiDraggable className="w-6 h-6" />
             </div>
             
@@ -546,6 +548,7 @@ export default function Page() {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [sortType, setSortType] = useState<"default" | "popular" | "latest">("default");
 
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
 
@@ -648,7 +651,15 @@ export default function Page() {
     },
   });
 
-  const adminLinks = [...links].sort((a, b) => a.order - b.order);
+  const adminLinks = useMemo(() => {
+    const sorted = [...links].sort((a, b) => a.order - b.order);
+    if (sortType === "popular") {
+      sorted.sort((a, b) => b.clickCount - a.clickCount);
+    } else if (sortType === "latest") {
+      sorted.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }
+    return sorted;
+  }, [links, sortType]);
 
   const displayName = userProfile?.displayName || user?.displayName || "MyLink User";
   const email = userProfile?.email || user?.email || "";
@@ -932,33 +943,22 @@ export default function Page() {
                   />
                 </div>
               </div>
-              
-              {/* 내 페이지 바로가기 버튼 */}
-              <Link 
-                href={publicProfilePath}
-                target="_blank"
-                className="absolute left-[calc(50%+56px)] p-2.5 rounded-full bg-purple-600 hover:bg-purple-700 text-white shadow-xl shadow-purple-500/20 hover:scale-110 transition-all duration-200 group border-2 border-white dark:border-slate-900"
-                title="내 페이지 바로가기"
-              >
-                <RiExternalLinkLine className="w-5 h-5" />
-                <span className="absolute left-full ml-2 px-2 py-1 rounded-md bg-slate-900 text-white text-[10px] font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none hidden md:block">
-                  내 페이지 방문
-                </span>
-              </Link>
             </div>
 
-            <p className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5 justify-center">
-              {displayName}
-              <RiVerifiedBadgeFill className="w-5 h-5 text-blue-500" />
+            <div className="relative inline-flex items-center justify-center">
+              <p className="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
+                {displayName}
+                <RiVerifiedBadgeFill className="w-5 h-5 text-blue-500" />
+              </p>
               <button
                 type="button"
                 onClick={() => setIsProfileModalOpen(true)}
-                className="ml-1 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-purple-600 transition-colors"
+                className="absolute left-full ml-1 p-1 rounded-md hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-purple-600 transition-colors"
                 title="프로필 수정"
               >
                 <RiPencilLine className="w-4 h-4" />
               </button>
-            </p>
+            </div>
             {userProfile?.username && (
               <p className="mt-1 text-sm font-medium text-slate-400 dark:text-slate-500">
                 @{userProfile.username}
@@ -973,6 +973,15 @@ export default function Page() {
                 자기소개를 입력해주세요
               </p>
             )}
+            <div className="mt-5">
+              <Link 
+                href={publicProfilePath}
+                target="_blank"
+                className="inline-flex items-center justify-center px-4 py-1.5 text-[13px] font-semibold rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition-colors shadow-sm"
+              >
+                내 페이지 방문하기
+              </Link>
+            </div>
           </header>
         )}
 
@@ -1249,24 +1258,35 @@ export default function Page() {
               </p>
             </div>
           ) : (
-            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-              <SortableContext items={adminLinks.map(l => l.id)} strategy={verticalListSortingStrategy}>
-                <div className="flex flex-col gap-4 w-full">
-                  {adminLinks.map((link) => (
-                    <SortableLinkItem
-                      key={link.id}
-                      link={link}
-                      isEditing={editingLinkId === link.id}
-                      onEdit={() => setEditingLinkId(link.id)}
-                      onDelete={() => openDeleteModal(link)}
-                      onToggleActive={(isActive) => handleToggleActive(link.id, isActive)}
-                      onEditSave={(values) => onEditSave(link, values)}
-                      onEditCancel={() => setEditingLinkId(null)}
-                    />
-                  ))}
+            <>
+              <div className="flex items-center justify-between mb-4 w-full px-1">
+                <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-300">내 링크</h2>
+                <div className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-lg">
+                  <button onClick={() => setSortType("default")} className={`px-2.5 py-1 text-[13px] font-medium rounded-md transition-colors ${sortType === 'default' ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>기본순</button>
+                  <button onClick={() => setSortType("popular")} className={`px-2.5 py-1 text-[13px] font-medium rounded-md transition-colors ${sortType === 'popular' ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>인기순</button>
+                  <button onClick={() => setSortType("latest")} className={`px-2.5 py-1 text-[13px] font-medium rounded-md transition-colors ${sortType === 'latest' ? 'bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}>최신순</button>
                 </div>
-              </SortableContext>
-            </DndContext>
+              </div>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={sortType === "default" ? handleDragEnd : undefined}>
+                <SortableContext items={adminLinks.map(l => l.id)} strategy={verticalListSortingStrategy}>
+                  <div className="flex flex-col gap-4 w-full">
+                    {adminLinks.map((link) => (
+                      <SortableLinkItem
+                        key={link.id}
+                        link={link}
+                        isEditing={editingLinkId === link.id}
+                        onEdit={() => setEditingLinkId(link.id)}
+                        onDelete={() => openDeleteModal(link)}
+                        onToggleActive={(isActive) => handleToggleActive(link.id, isActive)}
+                        onEditSave={(values) => onEditSave(link, values)}
+                        onEditCancel={() => setEditingLinkId(null)}
+                        disableDrag={sortType !== "default"}
+                      />
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            </>
           )}
         </main>
 
