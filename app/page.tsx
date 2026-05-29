@@ -21,8 +21,27 @@ import {
   RiMagicLine,
   RiLayoutMasonryLine,
   RiArrowRightLine,
+  RiDraggable,
 } from "@remixicon/react";
 import { useState, useEffect, useMemo, useRef } from "react";
+import { Switch } from "@/components/ui/switch";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -43,6 +62,7 @@ import {
   orderBy,
   onSnapshot,
   serverTimestamp,
+  writeBatch,
 } from "firebase/firestore";
 import {
   GoogleAuthProvider,
@@ -412,6 +432,105 @@ function DeleteConfirmModal({
   );
 }
 
+const getHighResFavicon = (url: string) => {
+  try {
+    const hostname = new URL(url).hostname;
+    return `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`;
+  } catch {
+    return null;
+  }
+};
+
+function SortableLinkItem({
+  link,
+  onEdit,
+  onDelete,
+  onToggleActive,
+  isEditing,
+  onEditSave,
+  onEditCancel,
+}: {
+  link: LinkItem;
+  onEdit: () => void;
+  onDelete: () => void;
+  onToggleActive: (isActive: boolean) => void;
+  isEditing: boolean;
+  onEditSave: (values: FormValues) => Promise<void>;
+  onEditCancel: () => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: link.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    opacity: isDragging ? 0.8 : 1,
+  };
+  const highResIcon = getHighResFavicon(link.url) || link.faviconUrl;
+
+  return (
+    <div ref={setNodeRef} style={style} className={`w-full ${isDragging ? "relative z-10" : ""}`}>
+      {isEditing ? (
+        <InlineEditForm link={link} onSave={onEditSave} onCancel={onEditCancel} />
+      ) : (
+        <Card className={`relative overflow-hidden border-0 shadow-sm bg-white/60 dark:bg-slate-800/60 backdrop-blur-md transition-all duration-300 hover:bg-white dark:hover:bg-slate-800 hover:shadow-xl hover:shadow-purple-500/10 ${!link.isActive ? 'opacity-50 grayscale-[50%]' : ''}`}>
+          
+          {/* 전체 카드 클릭 시 이동을 위한 백그라운드 링크 */}
+          <a href={link.url} target="_blank" rel="noopener noreferrer" className="absolute inset-0 z-0" title={`${link.title} 열기`} />
+
+          <CardContent className="relative z-10 p-4 flex items-center justify-between gap-3 pointer-events-none">
+            <div className="flex items-center gap-2 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 dark:hover:text-slate-400 shrink-0 pointer-events-auto" {...attributes} {...listeners}>
+              <RiDraggable className="w-6 h-6" />
+            </div>
+            
+            <div className="flex items-center gap-4 flex-1 min-w-0">
+              <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center overflow-hidden shrink-0 shadow-inner group-hover:scale-110 transition-all duration-300">
+                {highResIcon ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={highResIcon} alt={`${link.title} icon`} className="w-6 h-6 object-contain" />
+                ) : (
+                  <RiLinkM className="w-6 h-6 text-slate-400 dark:text-slate-500" />
+                )}
+              </div>
+              <div className="flex flex-col flex-1 min-w-0">
+                <span className="font-semibold text-[15px] text-slate-800 dark:text-slate-100 tracking-tight truncate">{link.title}</span>
+                <div className="flex items-center gap-1 mt-0.5 text-slate-500 dark:text-slate-400">
+                  <RiEyeLine className="w-3.5 h-3.5" />
+                  <span className="text-[11px] font-medium tracking-tight">{link.clickCount || 0}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3 shrink-0 border-l border-slate-200 dark:border-slate-700 pl-3 pointer-events-auto">
+              <div className="flex items-center gap-2 mr-1">
+                <Switch 
+                  checked={link.isActive} 
+                  onCheckedChange={onToggleActive} 
+                  className="data-[state=checked]:bg-purple-600"
+                  title={link.isActive ? "표시 중" : "숨김 상태"}
+                />
+              </div>
+              <button
+                onClick={onEdit}
+                title="수정"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200"
+              >
+                <RiPencilLine className="w-4 h-4" />
+              </button>
+              <button
+                onClick={onDelete}
+                title="삭제"
+                className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
+              >
+                <RiDeleteBinLine className="w-4 h-4" />
+              </button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 export default function Page() {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -529,7 +648,7 @@ export default function Page() {
     },
   });
 
-  const visibleLinks = links.filter((link) => link.isActive).sort((a, b) => a.order - b.order);
+  const adminLinks = [...links].sort((a, b) => a.order - b.order);
 
   const displayName = userProfile?.displayName || user?.displayName || "MyLink User";
   const email = userProfile?.email || user?.email || "";
@@ -573,15 +692,6 @@ export default function Page() {
     }
     window.open(url, "_blank", "noopener,noreferrer");
     setProfileMenuOpen(false);
-  };
-
-  const getHighResFavicon = (url: string) => {
-    try {
-      const hostname = new URL(url).hostname;
-      return `https://www.google.com/s2/favicons?domain=${hostname}&sz=128`;
-    } catch {
-      return null;
-    }
   };
 
   const signInWithGoogle = async () => {
@@ -687,6 +797,57 @@ export default function Page() {
   const openDeleteModal = (link: LinkItem) => {
     setDeleteTarget(link);
     setIsDeleteModalOpen(true);
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+
+    if (over && active.id !== over.id) {
+      const oldIndex = adminLinks.findIndex((item) => item.id === active.id);
+      const newIndex = adminLinks.findIndex((item) => item.id === over.id);
+
+      const newLinks = arrayMove(adminLinks, oldIndex, newIndex).map((link, index) => ({
+        ...link,
+        order: index,
+      }));
+      
+      // Update local state immediately for smooth UI
+      setLinks(newLinks);
+
+      // Update Firestore in batch
+      if (user) {
+        try {
+          const batch = writeBatch(db);
+          newLinks.forEach((linkItem, index) => {
+            const linkRef = doc(db, "users", user.uid, "links", linkItem.id);
+            batch.update(linkRef, { order: index });
+          });
+          await batch.commit();
+        } catch (error) {
+          console.error("Error updating order: ", error);
+          toast.error("순서 저장 중 오류가 발생했습니다.");
+        }
+      }
+    }
+  };
+
+  const handleToggleActive = async (linkId: string, isActive: boolean) => {
+    if (!user) return;
+    try {
+      setLinks(links.map((link) => link.id === linkId ? { ...link, isActive } : link));
+      const linkRef = doc(db, "users", user.uid, "links", linkId);
+      await updateDoc(linkRef, { isActive });
+    } catch (error) {
+      console.error("Error toggling active state: ", error);
+      toast.error("상태 변경 중 오류가 발생했습니다.");
+    }
   };
 
   return (
@@ -1079,7 +1240,7 @@ export default function Page() {
                 </Card>
               </div>
             ))
-          ) : visibleLinks.length === 0 ? (
+          ) : adminLinks.length === 0 ? (
             <div className="text-center py-12 px-4 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl bg-white/30 dark:bg-slate-900/30">
               <RiLinkM className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
               <p className="text-slate-500 dark:text-slate-400 font-medium text-[15px]">
@@ -1088,74 +1249,24 @@ export default function Page() {
               </p>
             </div>
           ) : (
-            visibleLinks.map((link, index) => {
-              const highResIcon = getHighResFavicon(link.url) || link.faviconUrl;
-              const isEditing = editingLinkId === link.id;
-
-              return (
-                <div key={link.id} className="w-full animate-in fade-in slide-in-from-bottom-3 fill-mode-both" style={{ animationDelay: `${(index + 1) * 100}ms` }}>
-                  {isEditing ? (
-                    <InlineEditForm link={link} onSave={(values) => onEditSave(link, values)} onCancel={() => setEditingLinkId(null)} />
-                  ) : (
-                    <Link
-                      href={link.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="group block w-full rounded-2xl outline-none focus-visible:ring-2 focus-visible:ring-purple-500/50"
-                    >
-                      <Card className="overflow-hidden border-0 shadow-sm bg-white/60 dark:bg-slate-800/60 backdrop-blur-md group-hover:bg-white dark:group-hover:bg-slate-800 transition-all duration-300 group-hover:shadow-xl group-hover:shadow-purple-500/10 group-hover:-translate-y-0.5">
-                        <CardContent className="p-4 flex items-center justify-between gap-3">
-                          <div className="flex items-center gap-4 flex-1 min-w-0">
-                            <div className="w-12 h-12 rounded-xl bg-slate-100 dark:bg-slate-700/50 flex items-center justify-center overflow-hidden shrink-0 shadow-inner group-hover:scale-110 group-hover:bg-white dark:group-hover:bg-slate-700 transition-all duration-300">
-                              {highResIcon ? (
-                                // eslint-disable-next-line @next/next/no-img-element
-                                <img src={highResIcon} alt={`${link.title} icon`} className="w-6 h-6 object-contain" />
-                              ) : (
-                                <RiLinkM className="w-6 h-6 text-slate-400 dark:text-slate-500" />
-                              )}
-                            </div>
-                            <div className="flex flex-col flex-1 min-w-0">
-                              <span className="font-semibold text-[15px] text-slate-800 dark:text-slate-100 tracking-tight truncate">{link.title}</span>
-                              <div className="flex items-center gap-1 mt-0.5 text-slate-500 dark:text-slate-400">
-                                <RiEyeLine className="w-3.5 h-3.5" />
-                                <span className="text-[11px] font-medium tracking-tight">{link.clickCount || 0}</span>
-                              </div>
-                            </div>
-                            <RiExternalLinkLine className="w-4 h-4 shrink-0 text-slate-300 dark:text-slate-600 group-hover:text-purple-400 dark:group-hover:text-purple-400 transition-colors duration-200 ml-auto" />
-                          </div>
-
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setEditingLinkId(link.id);
-                              }}
-                              title="수정"
-                              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all duration-200"
-                            >
-                              <RiPencilLine className="w-4 h-4" />
-                            </button>
-
-                            <button
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                openDeleteModal(link);
-                              }}
-                              title="삭제"
-                              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200"
-                            >
-                              <RiDeleteBinLine className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  )}
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <SortableContext items={adminLinks.map(l => l.id)} strategy={verticalListSortingStrategy}>
+                <div className="flex flex-col gap-4 w-full">
+                  {adminLinks.map((link) => (
+                    <SortableLinkItem
+                      key={link.id}
+                      link={link}
+                      isEditing={editingLinkId === link.id}
+                      onEdit={() => setEditingLinkId(link.id)}
+                      onDelete={() => openDeleteModal(link)}
+                      onToggleActive={(isActive) => handleToggleActive(link.id, isActive)}
+                      onEditSave={(values) => onEditSave(link, values)}
+                      onEditCancel={() => setEditingLinkId(null)}
+                    />
+                  ))}
                 </div>
-              );
-            })
+              </SortableContext>
+            </DndContext>
           )}
         </main>
 
